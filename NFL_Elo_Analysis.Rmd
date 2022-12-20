@@ -1,0 +1,701 @@
+---
+title: "NFL_Elo_Analysis"
+output: html_document
+date: "2022-10-30"
+---
+dataset:
+```{r}
+nfl_elo <- nfl_elo_proj
+
+nfl_elo
+```
+
+creating final_score variable
+```{r}
+nfl_elo <- nfl_elo %>% 
+  mutate(final_score = score_home_team - score_away_team)
+
+nfl_elo
+```
+
+creating a division variable
+```{r}
+divisionPlacement = function(teamName){
+  if(teamName == "BUF" | teamName == "NYJ" | teamName == "MIA" | teamName == "NE"){
+    return("AFC EAST")
+  }else if(teamName == "BAL" | teamName == "CIN" | teamName == "CLE" | teamName == "PIT"){
+    return("AFC NORTH")
+  }else if(teamName == "TEN" | teamName == "IND" | teamName == "JAX" | teamName == "HOU"){
+    return("AFC SOUTH")
+  }else if(teamName == "KC" | teamName == "LAC" | teamName == "DEN" | teamName == "OAK"){
+    return("AFC WEST")
+  }else if(teamName == "PHI" | teamName == "NYG" | teamName == "DAL" | teamName == "WSH"){
+    return("NFC EAST")
+  }else if(teamName == "GB" | teamName == "MIN" | teamName == "DET" | teamName == "CHI"){
+    return("NFC NORTH")
+  }else if(teamName == "ATL" | teamName == "CAR" | teamName == "TB" | teamName == "NO"){
+    return("NFC SOUTH")
+  }else if(teamName == "SF" | teamName == "SEA" | teamName == "LAR" | teamName == "ARI"){
+    return("NFC WEST")
+  }else{
+    return("ERROR")
+  }
+}
+nfl_elo %>% 
+  group_by(home_team) %>%
+  mutate(home_team_division = divisionPlacement(home_team[1])) %>% 
+  group_by(away_team) %>% 
+  mutate(away_team_division = divisionPlacement(away_team[1])) -> division_df
+division_df
+```
+
+creating total games played variable
+```{r}
+nfl_elo %>% 
+  group_by(home_team) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+nfl_elo %>% 
+  group_by(away_team) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team", ~"team") 
+```
+
+Which team had the highest avg pts per game
+```{r}
+nfl_elo %>% 
+  group_by(home_team) %>% 
+  summarise(total_home_points = sum(score_home_team)) -> total_home_points
+
+nfl_elo %>% 
+  group_by(away_team) %>% 
+  summarise(total_away_points = sum(score_away_team)) -> total_away_points
+
+totalPoints <- merge(total_home_points, total_away_points, by.x = "home_team", by.y = "away_team") %>% 
+  group_by(home_team) %>% 
+  summarize(totalPoints = total_home_points + total_away_points) %>% 
+  rename_at("home_team", ~"team")
+
+nfl_elo %>% 
+  group_by(home_team) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+nfl_elo %>% 
+  group_by(away_team) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team", ~"team")
+
+left_join(totalPoints, totalGames, by = "team") %>% 
+  mutate(avg_points_per_game = totalPoints / totalGames) %>% 
+  select(team, avg_points_per_game) %>% 
+  arrange(-avg_points_per_game) %>% 
+  mutate_if(is.numeric, round)
+```
+
+Which team had the highest avg elo per game
+```{r}
+nfl_elo %>% 
+  group_by(home_team) %>% 
+  summarise(total_home_elo = sum(elo_home_team)) -> total_home_elo
+
+nfl_elo %>% 
+  group_by(away_team) %>% 
+  summarise(total_away_elo = sum(elo_away_team)) -> total_away_elo
+
+totalelo <- merge(total_home_elo, total_away_elo, by.x = "home_team", by.y = "away_team") %>% 
+  group_by(home_team) %>% 
+  summarize(totalelo = total_home_elo + total_away_elo) %>% 
+  rename_at("home_team", ~"team")
+
+nfl_elo %>% 
+  group_by(home_team) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+nfl_elo %>% 
+  group_by(away_team) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team", ~"team")
+
+left_join(totalelo, totalGames, by = "team") %>% 
+  mutate(avg_elo_per_game = totalelo / totalGames) %>% 
+  select(team, avg_elo_per_game) %>% 
+  arrange(-avg_elo_per_game) %>% 
+  mutate_if(is.numeric, round)
+```
+
+which qb had the highest avg points per game
+```{r}
+nfl_elo %>% 
+  group_by(home_qb) %>% 
+  summarise(total_home_qb_points = sum(score_home_team)) -> total_home_qb_points
+
+nfl_elo %>% 
+  group_by(away_qb) %>% 
+  summarise(total_away_qb_points = sum(score_away_team)) -> total_away_qb_points
+
+totalQBPoints <- merge(total_home_qb_points, total_away_qb_points, by.x = "home_qb", by.y = "away_qb") %>% 
+  group_by(home_qb) %>% 
+  summarize(totalQBPoints = total_home_qb_points + total_away_qb_points) %>% 
+  rename_at("home_qb", ~"QB")
+
+nfl_elo %>% 
+  group_by(home_qb) %>% 
+  summarize(homeQBGames=n()) -> homeQBGames
+
+nfl_elo %>% 
+  group_by(away_qb) %>% 
+  summarize(awayQBGames=n()) -> awayQBGames
+
+totalQBGames <- merge(awayQBGames, homeQBGames, by.x = "away_qb", by.y = "home_qb") %>% 
+  group_by(away_qb) %>% 
+  summarize(totalQBGames = awayQBGames + homeQBGames) %>% 
+  rename_at("away_qb", ~"QB") 
+
+left_join(totalQBGames, totalQBPoints, by = "QB") %>% 
+  filter(totalQBGames > 16) %>% 
+  mutate(avg_qb_points_per_game = totalQBPoints / totalQBGames) %>% 
+  select(QB, avg_qb_points_per_game) %>% 
+  arrange(-avg_qb_points_per_game) %>% 
+  mutate_if(is.numeric, round)
+```
+
+which qb had the highest elo per game
+```{r}
+nfl_elo %>% 
+  group_by(home_qb) %>% 
+  summarise(total_home_qb_elo = sum(qb1_value_post)) -> total_home_qb_elo
+
+nfl_elo %>% 
+  group_by(away_qb) %>% 
+  summarise(total_away_qb_elo = sum(qb2_value_post)) -> total_away_qb_elo
+
+totalQBelo <- merge(total_home_qb_elo, total_away_qb_elo, by.x = "home_qb", by.y = "away_qb") %>% 
+  group_by(home_qb) %>% 
+  summarize(totalQBelo = total_home_qb_elo + total_away_qb_elo) %>% 
+  rename_at("home_qb", ~"QB")
+
+nfl_elo %>% 
+  group_by(home_qb) %>% 
+  summarize(homeQBGames=n()) -> homeQBGames
+
+nfl_elo %>% 
+  group_by(away_qb) %>% 
+  summarize(awayQBGames=n()) -> awayQBGames
+
+totalQBGames <- merge(awayQBGames, homeQBGames, by.x = "away_qb", by.y = "home_qb") %>% 
+  group_by(away_qb) %>% 
+  summarize(totalQBGames = awayQBGames + homeQBGames) %>% 
+  rename_at("away_qb", ~"QB") 
+
+left_join(totalQBGames, totalQBelo, by = "QB") %>% 
+  filter(totalQBGames > 16) %>% 
+  mutate(avg_qb_elo_per_game = totalQBelo / totalQBGames) %>% 
+  select(QB, avg_qb_elo_per_game) %>% 
+  arrange(-avg_qb_elo_per_game) %>% 
+  mutate_if(is.numeric, round)
+```
+
+which division has the highest avg team elo
+```{r}
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarise(total_h_division_elo = sum(elo_home_team)) -> total_h_division_elo
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarise(total_a_division_elo = sum(elo_away_team)) -> total_a_division_elo
+
+totalelo <- merge(total_h_division_elo, total_a_division_elo, by.x = "home_team_division", by.y = "away_team_division") %>% 
+  group_by(home_team_division) %>% 
+  summarize(totalelo = total_h_division_elo + total_a_division_elo) %>% 
+  rename_at("home_team_division", ~"division")
+
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team_division", by.y = "home_team_division") %>% 
+  group_by(away_team_division) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team_division", ~"division")
+
+left_join(totalelo, totalGames, by = "division") %>% 
+  mutate(avg_elo_per_game = totalelo / totalGames) %>% 
+  select(division, avg_elo_per_game) %>% 
+  arrange(-avg_elo_per_game) %>% 
+  mutate_if(is.numeric, round) -> div_elo
+
+div_elo
+```
+
+Total team wins 
+```{r}
+nfl_elo %>% 
+  mutate(finalScore = score_home_team - score_away_team) -> finalScore
+
+finalScore %>% 
+  filter(finalScore>0) %>% 
+  group_by(home_team) %>% 
+  summarize(homeTeamWins = n()) -> homeTeamWins
+
+finalScore %>% 
+  filter(finalScore < 0) %>% 
+  group_by(away_team) %>% 
+  summarize(awayTeamWins = n()) -> awayTeamWins
+
+merge(awayTeamWins, homeTeamWins, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalWins = awayTeamWins + homeTeamWins) %>% 
+  rename_at("away_team", ~"team") -> totalWins
+
+totalWins %>% 
+  arrange(desc(totalWins))
+  
+```
+
+Total games each team has played
+```{r}
+nfl_elo %>% 
+  group_by(home_team) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+nfl_elo %>% 
+  group_by(away_team) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team", ~"team") -> totalGames
+```
+
+Win percentage by team
+```{r}
+left_join(totalGames, totalWins, by = "team") %>% 
+  mutate(win_percent = totalWins / totalGames) -> win_percentage
+
+win_percentage
+```
+
+bar of top teams win%
+```{r}
+win_percentage %>% 
+  arrange(-win_percent) %>% 
+  head(10) %>% 
+  ggplot(mapping = aes(x = team, y = win_percent, fill = team)) +
+  geom_col() +
+  theme_light() +
+  xlab("Team") + ylab("Win %") +
+  ggtitle("Win % for the 10 Most Winning Teams") 
+```
+
+bar chart of divisions avg elo
+```{r}
+div_elo %>% 
+  ggplot(mapping = aes(x = division, y = avg_elo_per_game, fill = division)) +
+  geom_col() +
+  theme_light() +
+  coord_cartesian(ylim = c(1400,1600)) + 
+  ggtitle("Average Elo by Division") +
+  xlab("Division") + ylab("Average Elo per Game") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+```
+
+which division has the highest record per year
+```{r}
+nfl_elo %>% 
+  mutate(finalScore = score_home_team - score_away_team) -> finalScore
+
+finalScore %>% 
+  filter(finalScore>0) %>% 
+  group_by(home_team, season) %>% 
+  summarize(homeTeamWins = n()) -> homeTeamWins
+
+finalScore %>% 
+  filter(finalScore < 0) %>% 
+  group_by(away_team, season) %>%  
+  summarize(awayTeamWins = n()) -> awayTeamWins
+
+merge(awayTeamWins, homeTeamWins, by.x = c("away_team", "season"), by.y = c("home_team", "season")) %>%
+  group_by(away_team, season) %>% 
+  summarize(totalWins = awayTeamWins + homeTeamWins) %>% 
+  rename_at("away_team", ~"team") -> seasonTeamWins
+
+seasonTeamWins %>% 
+  arrange(season, desc(totalWins)) %>%
+  mutate(division = divisionPlacement(team[1])) %>% 
+  arrange(season, division, desc(totalWins)) -> divSeasonTeamWins
+
+divSeasonTeamWins %>% 
+  group_by(season, division) %>% 
+  slice_max(totalWins, with_ties = FALSE) %>% 
+  arrange(division) -> divwinnerbyyear
+
+divwinnerbyyear
+```
+
+bar chart of total wins of each division winner
+```{r}
+divwinnerbyyear %>% 
+  ggplot(mapping = aes(x = totalWins, y = division)) +
+  geom_col(mapping = aes(fill = division)) +
+  coord_cartesian(xlim = c(0, 20)) + 
+  facet_wrap(~ season) +
+  theme(axis.text = element_text(size = 6))
+```
+
+which division has the highest avg team points
+```{r}
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarise(total_h_division_pts = sum(score_home_team)) -> total_h_division_pts
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarise(total_a_division_pts = sum(score_away_team)) -> total_a_division_pts
+
+totalpts <- merge(total_h_division_pts, total_a_division_pts, by.x = "home_team_division", by.y = "away_team_division") %>% 
+  group_by(home_team_division) %>% 
+  summarize(totalpts = total_h_division_pts + total_a_division_pts) %>% 
+  rename_at("home_team_division", ~"division")
+
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team_division", by.y = "home_team_division") %>%
+  group_by(away_team_division) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team_division", ~"division")
+
+left_join(totalpts, totalGames, by = "division") %>% 
+  mutate(avg_pts_per_game = totalpts / totalGames) %>% 
+  select(division, avg_pts_per_game) %>% 
+  arrange(-avg_pts_per_game) 
+```
+
+which division has the highest avg points per game
+```{r}
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarise(total_h_division_points = sum(score_home_team)) -> total_h_division_points
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarise(total_a_division_points = sum(score_away_team)) -> total_a_division_points
+
+totalPoints <- merge(total_h_division_points, total_a_division_points, by.x = "home_team_division", by.y = "away_team_division") %>% 
+  group_by(home_team_division) %>% 
+  summarize(totalPoints = total_h_division_points + total_a_division_points) %>% 
+  rename_at("home_team_division", ~"division")
+
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team_division", by.y = "home_team_division") %>% 
+  group_by(away_team_division) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team_division", ~"division")
+
+left_join(totalPoints, totalGames, by = "division") %>% 
+  mutate(avg_points_per_game = totalPoints / totalGames) %>% 
+  select(division, avg_points_per_game) %>% 
+  arrange(-avg_points_per_game)
+```
+
+which division has the best qb play by avg qb elo per game
+```{r}
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarise(total_home_div_elo = sum(qb1_value_post)) -> total_home_div_elo
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarise(total_away_div_elo = sum(qb2_value_post)) -> total_away_div_elo
+
+totalQBelo <- merge(total_home_div_elo, total_away_div_elo, by.x = "home_team_division", by.y = "away_team_division") %>% 
+  group_by(home_team_division) %>% 
+  summarize(totalQBelo = total_home_div_elo + total_away_div_elo) %>% 
+  rename_at("home_team_division", ~"division")
+
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarize(homeQBGames=n()) -> homeQBGames
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarize(awayQBGames=n()) -> awayQBGames
+
+totalQBGames <- merge(awayQBGames, homeQBGames, by.x = "away_team_division", by.y = "home_team_division") %>% 
+  group_by(away_team_division) %>% 
+  summarize(totalQBGames = awayQBGames + homeQBGames) %>% 
+  rename_at("away_team_division", ~"division") 
+
+left_join(totalQBGames, totalQBelo, by = "division") %>% 
+  filter(totalQBGames > 16) %>% 
+  mutate(avg_qb_elo_per_game = totalQBelo / totalQBGames) %>% 
+  select(division, avg_qb_elo_per_game) %>% 
+  arrange(-avg_qb_elo_per_game)
+```
+
+best team by division by elo
+```{r}
+merge(totalQBelo, totalQBGames) %>% 
+  group_by(QB) %>% 
+  mutate(avgQBelo = (totalQBelo/totalQBGames)) %>% 
+  arrange(desc(avgQBelo)) %>% 
+  group_by(QB) %>%
+  mutate(division = divisionPlacement(team[1])) -> QBeloByDivision
+
+QBeloByDivision %>% 
+  group_by(division) %>% 
+  filter(avgQBelo == max(avgQBelo))
+
+```
+```{r}
+distinct_QB <- merge(total_home_qb_elo, total_away_qb_elo, by.x = "home_qb", by.y = "away_qb") %>% 
+  group_by(home_qb) %>% 
+  mutate(totalQBelo = total_home_qb_elo + total_away_qb_elo) %>% 
+  rename_at("home_qb", ~"QB") %>% 
+  distinct(QB, season.x)
+```
+
+
+```{r}
+totalelo
+totalGames
+```
+
+```{r}
+division_df %>% 
+  group_by(home_qb) %>% 
+  mutate(total_home_qb_elo = sum(qb1_value_post)) -> total_home_qb_elo
+
+division_df %>% 
+  group_by(away_qb) %>% 
+  mutate(total_away_qb_elo = sum(qb2_value_post)) -> total_away_qb_elo
+
+totalQBelo <- merge(total_home_qb_elo, total_away_qb_elo, by.x = "home_qb", by.y = "away_qb") %>% 
+  group_by(home_qb) %>% 
+  mutate(totalelo = total_home_qb_elo + total_away_qb_elo) %>% 
+  rename_at("home_qb", ~"QB") %>% 
+  rename_at("home_team.x", ~"team") %>% 
+  rename_at("season.x", ~"season") %>% 
+  rename_at("home_team_division.x", ~"division") %>% 
+  select(QB, season, team, division, totalelo) %>% 
+  distinct(QB, season, .keep_all = TRUE)
+
+
+division_df %>% 
+  group_by(home_qb) %>% 
+  mutate(homeQBGames=n()) -> homeQBGames
+
+division_df %>% 
+  group_by(away_qb) %>% 
+  mutate(awayQBGames=n()) -> awayQBGames
+
+totalQBGames <- merge(awayQBGames, homeQBGames, by.x = "away_qb", by.y = "home_qb") %>% 
+  group_by(away_qb, season.x) %>% 
+  mutate(totalGames = awayQBGames + homeQBGames) %>% 
+  rename_at("away_qb", ~"QB") %>% 
+  rename_at("home_team.x", ~"team") %>% 
+  rename_at("season.x", ~"season") %>% 
+  rename_at("home_team_division.x", ~"division") %>% 
+  select(QB, season, team, division, totalGames) %>% 
+  distinct(QB, .keep_all = TRUE)
+
+
+left_join(totalQBGames, totalQBelo, by = c("QB", "season")) %>% 
+  filter(totalGames > 16) %>% 
+  mutate(avg_qb_elo_per_game = totalelo / totalGames) 
+```
+
+highest avg points per game by division 
+```{r}
+division_df %>% 
+  group_by(home_team) %>% 
+  mutate(total_home_elo = sum(elo_home_team)) -> total_home_elo
+
+division_df %>% 
+  group_by(away_team) %>% 
+  mutate(total_away_elo = sum(elo_away_team)) -> total_away_elo
+
+totalelo <- merge(total_home_elo, total_away_elo, by.x = "home_team", by.y = "away_team") %>% 
+  rename_at("home_team", ~"team") %>%  
+  rename_at("home_team_division.x", ~"division") %>% 
+  group_by(team) %>% 
+  mutate(totalelo = total_home_elo + total_away_elo) %>% 
+  select(team, division, totalelo) %>% 
+  distinct(team, .keep_all = TRUE)
+
+division_df %>% 
+  group_by(home_team) %>% 
+  mutate(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team) %>% 
+  mutate(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  rename_at("away_team", ~"team") %>% 
+  rename_at("away_team_division.x", ~"division") %>% 
+  group_by(team) %>% 
+  mutate(totalGames = awayGames + homeGames) %>% 
+  select(team, division, totalGames) %>% 
+  distinct(team, .keep_all = TRUE)
+
+left_join(totalelo, totalGames, by = "team") %>% 
+  mutate(avg_elo_per_game = totalelo / totalGames) %>% 
+  rename_at("division.x", ~"division") %>% 
+  select(-division.y, -totalelo, -totalGames) %>% 
+  group_by(division) %>% 
+  slice_max(avg_elo_per_game)  %>% 
+  mutate_if(is.numeric, round)
+```
+
+highest avg points per game by division 
+```{r}
+division_df %>% 
+  group_by(home_team) %>% 
+  mutate(total_home_pts = sum(score_home_team)) -> total_home_pts
+
+division_df %>% 
+  group_by(away_team) %>% 
+  mutate(total_away_pts = sum(score_away_team)) -> total_away_pts
+
+totalpts <- merge(total_home_pts, total_away_pts, by.x = "home_team", by.y = "away_team") %>% 
+  rename_at("home_team", ~"team") %>% 
+  rename_at("home_team_division.x", ~"division") %>% 
+  group_by(team) %>% 
+  mutate(totalpts = total_home_pts + total_away_pts) %>% 
+  select(team, division, totalpts) %>% 
+  distinct(team, .keep_all = TRUE)
+
+division_df %>% 
+  group_by(home_team) %>% 
+  mutate(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team) %>% 
+  mutate(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  rename_at("away_team", ~"team") %>% 
+  rename_at("away_team_division.x", ~"division") %>% 
+  group_by(team) %>% 
+  mutate(totalGames = awayGames + homeGames) %>% 
+  select(team, division, totalGames) %>% 
+  distinct(team, .keep_all = TRUE)
+
+left_join(totalpts, totalGames, by = "team") %>% 
+  mutate(avg_pts_per_game = totalpts / totalGames) %>% 
+  rename_at("division.x", ~"division") %>% 
+  select(-division.y, -totalpts, -totalGames) %>% 
+  group_by(division) %>% 
+  slice_max(avg_pts_per_game) %>% 
+  mutate_if(is.numeric, round)
+```
+
+best qb seasons by elo
+```{r}
+nfl_elo %>% 
+  group_by(home_qb, season) %>% 
+  summarise(total_home_qb_elo = sum(qb1_value_post)) -> total_home_qb_elo
+
+nfl_elo %>% 
+  group_by(away_qb, season) %>% 
+  summarise(total_away_qb_elo = sum(qb2_value_post)) -> total_away_qb_elo
+
+totalQBelo <- merge(total_home_qb_elo, total_away_qb_elo, by.x = c("home_qb", "season"), by.y = c("away_qb", "season")) %>% 
+  group_by(home_qb, season) %>% 
+  summarize(totalQBelo = total_home_qb_elo + total_away_qb_elo) %>% 
+  rename_at("home_qb", ~"QB")
+
+totalQBelo
+
+division_df %>% 
+  group_by(home_qb, season) %>% 
+  summarize(homeQBGames=n()) -> homeQBGames
+
+division_df %>% 
+  group_by(away_qb, season) %>% 
+  summarize(awayQBGames=n()) -> awayQBGames
+
+totalQBGames <- merge(awayQBGames, homeQBGames, by.x = c("away_qb", "season"), by.y = c("home_qb", "season")) %>% 
+  group_by(away_qb, season) %>% 
+  summarize(totalQBGames = awayQBGames + homeQBGames) %>% 
+  rename_at("away_qb", ~"QB") 
+
+totalQBGames
+
+left_join(totalQBGames, totalQBelo, by = c("QB", "season")) %>% 
+  filter(totalQBGames > 8) %>% 
+  mutate(avg_qb_elo_per_game = totalQBelo / totalQBGames) %>% 
+  select(QB, season, avg_qb_elo_per_game) %>% 
+  arrange(-avg_qb_elo_per_game) %>% 
+  mutate_if(is.numeric, round)
+```
+
+best team seasons by elo
+```{r}
+nfl_elo %>% 
+  group_by(home_team, season) %>% 
+  summarise(total_home_elo = sum(elo_home_team)) -> total_home_team_elo
+
+nfl_elo %>% 
+  group_by(away_team, season) %>% 
+  summarise(total_away_elo = sum(elo_away_team)) -> total_away_team_elo
+
+totalteamelo <- merge(total_home_team_elo, total_away_team_elo, by.x = c("home_team", "season"), by.y = c("away_team", "season")) %>% 
+  group_by(home_team, season) %>% 
+  summarize(totalelo = total_home_elo + total_away_elo) %>% 
+  rename_at("home_team", ~"team")
+
+totalteamelo
+
+division_df %>% 
+  group_by(home_team, season) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team, season) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = c("away_team", "season"), by.y = c("home_team", "season")) %>% 
+  group_by(away_team, season) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team", ~"team") 
+
+totalGames
+
+left_join(totalGames, totalteamelo, by = c("team", "season")) %>%  
+  mutate(avg_elo_per_game = totalelo / totalGames) %>% 
+  select(team, season, avg_elo_per_game) %>% 
+  arrange(-avg_elo_per_game) %>% 
+  mutate_if(is.numeric, round)
+```

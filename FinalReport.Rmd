@@ -1,0 +1,481 @@
+---
+title: "The NFL Hierarchy in the 21st Century – a Descriptive and Exploratory Data Analysis"
+author: "Tommy Schupp and Andrew Ricupito - DATA 412"
+linkcolor: blue
+output: pdf_document
+date: "2022-11-29"
+---
+
+```{r echo=FALSE, message = FALSE}
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+
+```
+
+## Executive Summary
+
+The latest expansion of the NFL, the addition of the Houston Texans in 2002, marked a new era for football in America. Rivalries between teams have become permanent fixtures of American popular culture. Our project seeks to put these questions to rest: What is the best team in the modern NFL? Who is the best quarterback? Our raw data set, which comes from FiveThirtyEight, has data from every game since the beginning of the NFL in 1920. We answer our questions by looking at the record, win percentage, Elo, and average points per game for each team and quarterback. We found that the New England Patriots was the highest rated team by Elo, and had the highest win percentage of any team. There was no certain dominant quarterback, but with more years in the league, Patrick Mahomes may gain that title.
+
+\newpage
+
+## Introduction
+
+The motivation behind this report is primarily personal interest and passion. Without a doubt, football is one of the most popular sports in the United States, so it is relevant to popular culture to find the best performing team(Oriard). A tremendous amount of pride and identity is associated with football teams in the US: they represent many cities and states around the country. Similarly, huge amounts of data science goes into sports analysis. The sports betting industry has ballooned in the past few years, as many sports betting websites create predictive models to set their betting odds (World Lottery Association). There are also websites such as FiveThirtyEight who conduct analyses on sports frequently. In terms of the NFL, it is obvious that some teams are better than others, but finding a way to quantify that is difficult. We are looking over a number of categories, so we hope to qualify our findings in the context of the questions we are asking.
+
+In order to answer this question, we must explore over the last two decades: record, Elo (a system used to rate players adjusted to their relative skill to the rest of the league), and points scored. For each of these main categories, we will be finding data from each team, as well as each impactful starting quarterback. We will observe these results both throughout the league, and looking at each individual division. The only individual position that is impactful enough to include in our report is the quarterback. This is because quarterback is undoubtedly regarded as the most important position in football. A Harvard Business Review article published near the end of our observed time period in 2019 used a regression to see which variables affect a team's win-loss record the most. They found that quarterbacks were assuredly the most impactful variable, accounting for 37.37% of the variance in a team's win-loss record; the variable that accounted for the next highest weight of variance in a team's performance was coaches being responsible for 29.08% of it (Groysberg).
+
+The data set we are using for this project is from website FiveThirtyEight, who runs predictive models on elections, and posts data on team and player Elo rating over many different sports. It is their data set on NFL Elo and record we are using in our report. This data set has data for every game from the start of the NFL in 1920 to this year's season. It lists the Elo of each team before and after every game, as well as the Elo of the starting quarterbacks, as well as the points scored by each participating team in every game. From this data set, we are looking at games starting from the 2002 season, when the NFL was expanded to its current format with the addition of the Houston Texans, to last year's 2021 season, the most recent fully complete season. We do not want to include values from this season, as it is not over yet and some teams are yet to play in their bye week, giving them an additional game versus those teams who have already had their bye week. We created additional variables final_score which computes the final score of each game, away_team_division which gives the division of the away team, and home_team_division which gives the division of the home team. Overall, this gives us a total of 5,360 games we are observing.
+
+## Initial Hypothesis
+
+The relationships we are investigating are as follows:
+
+[Record and Win Percentage:]{.underline}
+
+-   What teams have the best win percentage?
+
+-   What team has the best win percentage per division?
+
+-   What quarterbacks have the highest win percentage?
+
+[Elo:]{.underline}
+
+-   What teams have the highest average Elo?
+
+-   Which team per division has the highest average Elo?
+
+-   What quarterbacks have the highest Elo per game?
+
+-   What are the best qb seasons of the last 2 decades by Elo?
+
+-   What are the best team seasons of the last 2 decades by Elo?
+
+[Average Points Per Game:]{.underline}
+
+-   What teams have the highest average points per game?
+
+-   What quarterbacks have the highest average points per game?
+
+-   What quarterbacks have the highest average points per game in each division?
+
+Our hypothesis is that the Patriots have the best record, the highest Elo, and the highest average points per game. We also hypothesize that Tom Brady has the best record, the highest Elo, and the highest average points per game. For division, we believe that AFC EAST will be the best division.
+
+## Data Preparation
+
+The original data set was very raw and incomplete. The first tidying that we did was to add variables that gave the winning team for each game based on the point differential. Using a function, we also added the division of each team to the data set so that we could get division-based metrics. We also had to find the total number of games that the home/away team had played, as well as their total wins, Elo, and points. 
+
+We also removed everything but the last 20 years, since before then did not include the Houston Texans, giving the league a different format. This took the vast majority of observations from our data, but still left us with about 5000 games to analyze. We also did not include games from the current season, as it is currently incomplete which will skew the results having to do with team record. 
+
+For the quarterback analysis, we also removed the data from any quarterback who had played less than a full season of games. This is because if a quarterback only played 1 game and won, they would have a 100% win-rate, but that wouldn't be representative of their true level of play. 
+
+## Exploratory Data Analysis
+
+First, let's take a look at our findings for each of our research questions.
+
+[Record and Win Percentage]{.underline}
+
+| Team Name            | Total Wins | Total Games | Win Percentage |
+|----------------------|------------|-------------|----------------|
+| New England Patriots | 265        | 360         | 73%            |
+| Pittsburgh Steelers  | 218        | 346         | 63%            |
+| Green Bay Packers    | 215        | 348         | 61%            |
+
+The above table displays the teams with the highest win percentages. We see that the New England Patriots have the highest win percentage with 73%, followed by the Pittsburgh Steelers with 63%, and the Green Bay Packers by 61%.
+
+| Team Name            | Total Wins | Total Games | Win Percentage | Division  |
+|----------------------|------------|-------------|----------------|-----------|
+| Pittsburgh Steelers  | 218        | 346         | 63%            | AFC NORTH |
+| Green Bay Packers    | 215        | 348         | 61%            | NFC NORTH |
+| New England Patriots | 265        | 360         | 73%            | AFC EAST  |
+| Philadelphia Eagles  | 192        | 343         | 55%            | NFC EAST  |
+| Indianapolis Colts   | 214        | 347         | 61%            | AFC SOUTH |
+| New Orleans Saints   | 196        | 338         | 57%            | NFC SOUTH |
+| Kansas City Chiefs   | 188        | 340         | 55%            | AFC WEST  |
+| Seattle Seahawks     | 200        | 348         | 57%            | NFC WEST  |
+
+The above table shows the teams with the highest win percentage in each division. The division with the highest win percentage team is AFC East, with the New England Patriots, followed by AFC North with the Pittsburgh Steelers, then NFC North with the Green Bay Packers.
+
+| Quarterback     | Total Games | Total Wins | Win Percentage |
+|-----------------|-------------|------------|----------------|
+| Patrick Mahomes | 74          | 58         | 78%            |
+| Tom Brady       | 346         | 264        | 76%            |
+| Peyton Manning  | 226         | 168        | 74%            |
+
+The table above shows the quarterbacks with more than 16 games with the highest win percentage. First is Patrick Mahomes, with a 78% winrate. Next is Tom Brady with a 76% winrate. Third is Peyton Manning with 74%.
+
+[Elo:]{.underline}
+
+| Team                 | Average Elo Per Game |
+|----------------------|----------------------|
+| New England Patriots | 1664                 |
+| Pittsburgh Steelers  | 1590                 |
+| Green Bay Packers    | 1581                 |
+
+The above table shows the teams with the highest average Elo per game. Again, we have the New England Patriots first with 1664 Elo, then the Pittsburgh Steelers with 1550 Elo, and then the Green Bay Packers with 1581 Elo.
+
+| Team                 | Division  | Average Elo Per Game |
+|----------------------|-----------|----------------------|
+| Pittsburgh Steelers  | AFC NORTH | 1590                 |
+| Green Bay Packers    | NFC NORTH | 1581                 |
+| New England Patriots | AFC EAST  | 1664                 |
+| Philadelphia Eagles  | NFC EAST  | 1555                 |
+| Indianapolis Colts   | AFC SOUTH | 1570                 |
+| New Orleans Saints   | NFC SOUTH | 1556                 |
+| Kansas City Chiefs   | AFC WEST  | 1542                 |
+| Seattle Seahawks     | NFC WEST  | 1552                 |
+
+The above table shows the team in each division with the highest average Elo per game.
+
+| Quarterback     | Average Elo Per Game |
+|-----------------|----------------------|
+| Patrick Mahomes | 250                  |
+| Peyton Manning  | 220                  |
+| Drew Brees      | 213                  |
+
+The above table shows the quarterbacks with the highest average Elo per game. First is Patrick Mahomes with 250 Elo, then Peyton Manning with 220, and then Drew Brees with 213.
+
+| Quarterback     | Season | Season Average Elo Per Game |
+|-----------------|--------|-----------------------------|
+| Peyton Manning  | 2013   | 285                         |
+| Patrick Mahomes | 2020   | 278                         |
+| Peyton Manning  | 2014   | 273                         |
+| Drew Brees      | 2016   | 270                         |
+| Drew Brees      | 2012   | 265                         |
+| Drew Brees      | 2011   | 265                         |
+| Drew Brees      | 2018   | 264                         |
+| Peyton Manning  | 2004   | 260                         |
+| Patrick Mahomes | 2019   | 258                         |
+| Aaron Rodgers   | 2011   | 257                         |
+
+The above table shows the top 10 quarterback seasons in the last 2 decades by season average Elo per game.
+
+| Team                 | Season | Season Average Elo Per Game |
+|----------------------|--------|-----------------------------|
+| New England Patriots | 2007   | 1777                        |
+| Green Bay Packers    | 2011   | 1737                        |
+| New England Patriots | 2004   | 1735                        |
+| Kansas City Chiefs   | 2020   | 1727                        |
+| Indianapolis Colts   | 2007   | 1725                        |
+| Indianapolis Colts   | 2005   | 1718                        |
+| New England Patriots | 2015   | 1712                        |
+| New England Patriots | 2017   | 1704                        |
+| New England Patriots | 2011   | 1702                        |
+| New England Patriots | 2012   | 1700                        |
+
+The above table shows the top 10 team seasons in the last 2 decades by season average Elo per game.
+
+| Team                 | Average Points Per Game |
+|----------------------|-------------------------|
+| New England Patriots | 28                      |
+| New Orleans Saints   | 26                      |
+| Green Bay Packers    | 26                      |
+
+The above table shows the teams with the highest average points per game. First is the New England Patriots with 28 points, then the New Orleans Saints with 26 points, and then the Green Bay Packers with 26 points.
+
+| Quarterback     | Average Points Per Game |
+|-----------------|-------------------------|
+| Patrick Mahomes | 31                      |
+| Tom Brady       | 28                      |
+| Lamar Jackson   | 28                      |
+
+The above table shows the quarterbacks with the highest average points per game. First is Patrick Mahomes with 31 points, then Tom Brady with 28 points, and then Lamar Jackson with 28 points.
+
+| Team                 | Division  | Average Points Per Game |
+|----------------------|-----------|-------------------------|
+| Pittsburgh Steelers  | AFC NORTH | 23                      |
+| Green Bay Packers    | NFC NORTH | 26                      |
+| New England Patriots | AFC EAST  | 28                      |
+| Philadelphia Eagles  | NFC EAST  | 24                      |
+| Indianapolis Colts   | AFC SOUTH | 25                      |
+| New Orleans Saints   | NFC SOUTH | 26                      |
+| Los Angeles Chargers | AFC WEST  | 25                      |
+| Seattle Seahawks     | NFC WEST  | 24                      |
+
+The above table shows the team with the highest average points per game in each division.
+
+The results of our findings support that the New England Patriots have been the undisputed champions of the National Football League in the modern era. They even have more than a 10% higher record than the next highest team, they are the clear champions. They have a shocking 47 wins more than the next most winning team, this is almost three seasons worth of games. They also have far and away the best average team Elo, with a rating 74 points higher than the team with the next highest average rating. They have six of the ten best rated seasons, and they also score the most amount of points per game on average.
+
+```{r echo = FALSE, message = FALSE, fig.height=3}
+division_df = read_csv("./division_df.csv")
+division_df %>% 
+  mutate(finalScore = score_home_team - score_away_team) -> finalScore
+
+finalScore %>% 
+  filter(finalScore>0) %>% 
+  group_by(home_team) %>% 
+  summarize(homeTeamWins = n()) -> homeTeamWins
+
+finalScore %>% 
+  filter(finalScore < 0) %>% 
+  group_by(away_team) %>% 
+  summarize(awayTeamWins = n()) -> awayTeamWins
+
+merge(awayTeamWins, homeTeamWins, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalWins = awayTeamWins + homeTeamWins) %>% 
+  rename_at("away_team", ~"team") -> totalWins
+  
+division_df %>% 
+  group_by(home_team) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+merge(awayGames, homeGames, by.x = "away_team", by.y = "home_team") %>% 
+  group_by(away_team) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team", ~"team") -> totalGames
+
+left_join(totalGames, totalWins, by = "team") %>% 
+  mutate(win_percent = totalWins / totalGames) -> win_percentage
+
+win_percentage %>% 
+  arrange(-win_percent) %>% 
+  head(10) %>% 
+  ggplot(mapping = aes(x = team, y = win_percent, fill = team)) +
+  geom_col() +
+  theme_light() +
+  xlab("Team") + ylab("Win %") +
+  ggtitle("Win % for the 10 Most Winning Teams") 
+```
+
+Looking at the quarterbacks, it was a surprise to see the lack of correlation between the best quarterbacks and the best teams. We went into this project expecting the top teams to have the top quarterbacks. However, out of the top ten team seasons, only two of those teams had a quarterback playing one of the top ten quarterback seasons, the 2011 Green Bay Packers with Aaron Rogers and the 2020 Kansas City Chiefs with Patrick Mahomes. Both of these teams went on to win the super bowl these years.
+
+```{r echo = FALSE, message = FALSE, fig.height=3}
+division_df = read_csv("./division_df.csv")
+division_df %>% 
+  mutate(finalScore = score_home_team - score_away_team) %>% 
+  mutate(date = mdy(date))-> finalScore
+
+
+finalScore %>% 
+  group_by(home_team, date) %>% 
+  rename_at("home_team", ~"team") %>% 
+  count() -> homeTeamCount
+
+finalScore %>% 
+  group_by(away_team, date) %>% 
+  rename_at("away_team", ~"team") %>% 
+  count() -> awayTeamCount
+
+full_join(awayTeamCount, homeTeamCount) %>% 
+  arrange(date) %>% 
+  group_by(team) %>% 
+  mutate(tallyCount = cumsum(n)) %>% 
+  arrange(team, date) %>% 
+  select(team, date, tallyCount) -> dateTeamCount
+
+
+finalScore %>% 
+  filter(finalScore>0) %>% 
+  group_by(home_team, date) %>%
+  rename_at("home_team", ~"team") %>% 
+  count() -> homeTeamWins
+
+
+finalScore %>% 
+  filter(finalScore < 0) %>% 
+  group_by(away_team, date) %>%  
+  rename_at("away_team", ~"team") %>% 
+  count() -> awayTeamWins
+
+full_join(x = awayTeamWins, y = homeTeamWins) %>% 
+  arrange(date) %>% 
+  group_by(team) %>% 
+  mutate(tallyWin = cumsum(n)) %>% 
+  select(team, date, tallyWin)-> dateTeamWins
+
+left_join(dateTeamWins, dateTeamCount) %>% 
+  mutate(runAverage = tallyWin/tallyCount) %>% 
+  filter(team == "NE" | team == "GB" | team == "PIT" | team == "KC" | team == "IND") %>% 
+  ggplot(mapping = aes(x = date, y = runAverage, color = team)) + geom_line() + xlab("Date") + ylab("Running Win Percentage") + theme_light() + ggtitle("Running Average Win Percentage For The Top 5 Teams")
+
+
+```
+
+We can also say that the Green Bay Packers and Pittsburgh Steelers have been on top of the league this decade, as the clear second and third best teams. The Steelers are rated second in win percentage, and average elo per game; their defense paved the way for them to second however as their offense is ninth in average points per game. The Packers have the third highest win percentage and average Elo per game, with their quarterback for the most of the decade Aaron Rogers having the fourth highest average Elo and sixth highest average points.
+
+```{r echo = FALSE, message = FALSE, fig.height=4}
+division_df = read_csv("./division_df.csv")
+divisionPlacement = function(teamName){
+  if(teamName == "BUF" | teamName == "NYJ" | teamName == "MIA" | teamName == "NE"){
+    return("AFC EAST")
+  }else if(teamName == "BAL" | teamName == "CIN" | teamName == "CLE" | teamName == "PIT"){
+    return("AFC NORTH")
+  }else if(teamName == "TEN" | teamName == "IND" | teamName == "JAX" | teamName == "HOU"){
+    return("AFC SOUTH")
+  }else if(teamName == "KC" | teamName == "LAC" | teamName == "DEN" | teamName == "OAK"){
+    return("AFC WEST")
+  }else if(teamName == "PHI" | teamName == "NYG" | teamName == "DAL" | teamName == "WSH"){
+    return("NFC EAST")
+  }else if(teamName == "GB" | teamName == "MIN" | teamName == "DET" | teamName == "CHI"){
+    return("NFC NORTH")
+  }else if(teamName == "ATL" | teamName == "CAR" | teamName == "TB" | teamName == "NO"){
+    return("NFC SOUTH")
+  }else if(teamName == "SF" | teamName == "SEA" | teamName == "LAR" | teamName == "ARI"){
+    return("NFC WEST")
+  }else{
+    return("ERROR")
+  }
+}
+
+division_df %>% 
+  mutate(finalScore = score_home_team - score_away_team) -> finalScore
+
+finalScore %>% 
+  filter(finalScore>0) %>% 
+  group_by(home_team, season) %>% 
+  summarize(homeTeamWins = n()) -> homeTeamWins
+
+finalScore %>% 
+  filter(finalScore < 0) %>% 
+  group_by(away_team, season) %>%  
+  summarize(awayTeamWins = n()) -> awayTeamWins
+
+merge(awayTeamWins, homeTeamWins, by.x = c("away_team", "season"), by.y = c("home_team", "season")) %>%
+  group_by(away_team, season) %>% 
+  summarize(totalWins = awayTeamWins + homeTeamWins) %>% 
+  rename_at("away_team", ~"team") -> seasonTeamWins
+
+seasonTeamWins %>% 
+  arrange(season, desc(totalWins)) %>%
+  mutate(division = divisionPlacement(team[1])) %>% 
+  arrange(season, division, desc(totalWins)) -> divSeasonTeamWins
+
+divSeasonTeamWins %>% 
+  group_by(season, division) %>% 
+  slice_max(totalWins, with_ties = FALSE) %>% 
+  arrange(division) -> divwinnerbyyear
+
+divwinnerbyyear %>% 
+  ggplot(mapping = aes(x = totalWins, y = division)) +
+  geom_col(mapping = aes(fill = division)) +
+  coord_cartesian(xlim = c(0, 20)) + 
+  facet_wrap(~ season) +
+  theme(axis.text = element_text(size = 6)) + 
+  theme_light() + 
+  xlab("Total Season Wins") + 
+  ylab("Division") + 
+  ggtitle("Total Wins For Each Division Winner By Season") + 
+  theme(axis.text.y = element_blank())
+```
+
+Tom Brady was one of the best quarterbacks of the last two decades, but not the best. Although he scored the second most points per game of any quarterback, a lot of this can be accredited to his offense as he is ninth in average Elo per game, and did not have any of the ten highest rated quarterback seasons by Elo. He also, surprisingly, does not have the highest winning percentage of all quarterbacks as that title goes to Patrick Mahomes. Along with the highest win percentage, Mahomes has the highest average points per game by a margin of a field goal, leads the quarterbacks in Elo, and has two of the top ten quarterback seasons by Elo. It will be exciting to see how Mahomes' career plays out and whether or not he stays consistent and pulls away from all time greats such as Tom Brady and Peyton Manning.
+
+```{r echo = FALSE, message = FALSE, fig.height=3}
+division_df = read_csv("./division_df.csv")
+division_df %>% 
+  mutate(finalScore = score_home_team - score_away_team) %>% 
+  mutate(date = mdy(date))-> finalScore
+
+
+finalScore %>% 
+  group_by(home_qb, date) %>% 
+  rename_at("home_qb", ~"qb") %>% 
+  count() -> homeQbCount
+
+finalScore %>% 
+  group_by(away_qb, date) %>% 
+  rename_at("away_qb", ~"qb") %>% 
+  count() -> awayQbCount
+
+full_join(awayQbCount, homeQbCount) %>% 
+  arrange(date) %>% 
+  group_by(qb) %>% 
+  mutate(tallyCount = cumsum(n)) %>% 
+  arrange(qb, date) %>% 
+  select(qb, date, tallyCount) -> dateQbCount
+
+
+finalScore %>% 
+  filter(finalScore>0) %>% 
+  group_by(home_qb, date) %>%
+  rename_at("home_qb", ~"qb") %>% 
+  count() -> homeQbWins
+
+
+finalScore %>% 
+  filter(finalScore < 0) %>% 
+  group_by(away_qb, date) %>%  
+  rename_at("away_qb", ~"qb") %>% 
+  count() -> awayQbWins
+
+full_join(x = awayQbWins, y = homeQbWins) %>% 
+  arrange(date) %>% 
+  group_by(qb) %>% 
+  mutate(tallyWin = cumsum(n)) %>% 
+  select(qb, date, tallyWin)-> dateQbWins
+
+left_join(dateQbWins, dateQbCount) %>% 
+  mutate(runAverage = tallyWin/tallyCount) %>% 
+  filter(qb == "Tom Brady" | qb == "Peyton Manning" | qb == "Patrick Mahomes" | qb == "Drew Brees" | qb == "Aaron Rodgers") %>% 
+  ggplot(mapping = aes(x = date, y = runAverage, color = qb)) + geom_line() + xlab("Date") + ylab("Running Win Percentage") + theme_light() + ggtitle("Running Average Win Percentage For The Top 5 Quarterbacks")
+
+
+
+```
+
+Looking at the individual divisions, it is clear that offense is very important as the team with the highest average points per game has the highest win record and average Elo per game in every division but the AFC West. Here, the Chiefs with the highest win percentage average about one point less per game than the Chargers. We can see that the best division over the last twenty years is the AFC East, as they have an average Elo eleven points higher than the next highest division, and the worst division is the AFC South, with an average Elo four points lower than the next highest team. 
+
+```{r echo = FALSE, message = FALSE, fig.height=3}
+division_df = read_csv("./division_df.csv")
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarise(total_h_division_elo = sum(elo_home_team)) -> total_h_division_elo
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarise(total_a_division_elo = sum(elo_away_team)) -> total_a_division_elo
+
+totalelo <- merge(total_h_division_elo, total_a_division_elo, by.x = "home_team_division", by.y = "away_team_division") %>% 
+  group_by(home_team_division) %>% 
+  summarize(totalelo = total_h_division_elo + total_a_division_elo) %>% 
+  rename_at("home_team_division", ~"division")
+
+division_df %>% 
+  group_by(home_team_division) %>% 
+  summarize(homeGames=n()) -> homeGames
+
+division_df %>% 
+  group_by(away_team_division) %>% 
+  summarize(awayGames=n()) -> awayGames
+
+totalGames <- merge(awayGames, homeGames, by.x = "away_team_division", by.y = "home_team_division") %>% 
+  group_by(away_team_division) %>% 
+  summarize(totalGames = awayGames + homeGames) %>% 
+  rename_at("away_team_division", ~"division")
+
+left_join(totalelo, totalGames, by = "division") %>% 
+  mutate(avg_elo_per_game = totalelo / totalGames) %>% 
+  select(division, avg_elo_per_game) %>% 
+  arrange(-avg_elo_per_game) %>% 
+  mutate_if(is.numeric, round) -> div_elo
+div_elo %>% 
+  ggplot(mapping = aes(x = division, y = avg_elo_per_game, fill = division)) +
+  geom_col() +
+  theme_light() +
+  coord_cartesian(ylim = c(1400,1600)) + 
+  ggtitle("Average Elo by Division") +
+  xlab("Division") + ylab("Average Elo per Game") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+```
+
+## Summary
+
+This data supports our hypothesis that the New England Patriots have been the best team in the NFL over the last two decades. They have the highest win percentage, the highest average Elo per game, and the second highest average points per game. They have won the most super bowls this era, and their play throughout the regular season backs that up. Due to their dominance the highest rated division by Elo is theirs, the AFC East, this is also the division with the highest rated quarterback play by Elo. The division that has the highest scoring games is the NFC South, and the division with the lowest scoring games is the AFC North. 
+
+This data does not support our hypothesis that Tom Brady is the most dominant quarterback over the last two decades. Although he has led his team to the highest rating, and he has the second highest scoring offense, his Elo rating is not as good as other all time greats, as he is ninth among quarterbacks for highest average Elo rating. The quarterback with the highest average Elo per game is Patrick Mahomes, followed by Peyton Manning and Drew Brees. These three quarterbacks hold nine of the ten best quarterback seasons by Elo, stunning the league with their impeccable play for many seasons. It will be interesting to see how Patrick Mahomes compares to these other two hall of fame quarterbacks (Drew Brees is not eligible for the hall of fame until 2026, but he will surely be accepted) as his career progresses. 
+
+The NFL and its players are constantly changing their tactics to win, creating an argument of which decade was the best(Patel). This is where our dataset meets accuracy issues, as the Elo rating for a team or player only compares them to other current teams and players in the league. We compare the Elo of quarterbacks twenty years ago to the Elo of quarterbacks now, a rating we are assuming does not change. In the future, our findings can be improved by finding a method of rating players that is not subjective to the players at that specific time. 
+
+## Appendix A: References
+
+Groysberg, B. *Who's the most important member of an NFL franchise?* Harvard Business Review. (2019, April 26). Retrieved December 11, 2022, from <https://hbr.org/2019/04/whos-the-most-important-member-of-an-nfl-franchise>
+
+Oriard, M. *Brand NFL : Making and Selling America's Favorite Sport. 2nd ed.* University of North Carolina Press. (2010). Retrieved December 12, 2022, from <https://ebookcentral.proquest.com/lib/aul/reader.action?docID=605925&query=>
+
+Patel, P. *NFL Tendency Analysis And Basic Play Type Prediction.* MSiA Student Research, Northwestern. (31 Jan. 2020). Retrieved December 11, 2022, from <https://sites.northwestern.edu/msia/2020/01/31/nfl-tendency-analysis-and-basic-play-type-prediction/>
